@@ -1,2 +1,6 @@
 ---
 # defaults file for vault
+namespace: vault
+replicas: 3
+key_shares: 1
+key_threshold: 1

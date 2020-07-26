@@ -6,3 +6,126 @@
     kind: Namespace
     name: vault
     state: present
+
+- name: deploy helm recipe
+  community.kubernetes.k8s:
+    state: present
+    namespace: "{{ namespace }}"
+    definition: "{{ lookup('template', 'helm.yml.j2') }}"
+    wait: yes
+
+- name: Wait for all pods to be running
+  community.kubernetes.k8s_info:
+    kind: Pod
+    namespace: "{{ namespace }}"
+    label_selectors:
+      - app.kubernetes.io/name=vault
+      - vault-initialized
+      - vault-sealed
+      - vault-active
+  register: vault_pod_status
+  until: vault_pod_status.resources|length >= replicas
+
+- name: Set Facts
+  set_fact:
+    vault_intialized: "{{ vault_pod_status.resources[0].metadata.labels['vault-initialized'] | bool }}"
+    vault_sealed:     "{{ vault_pod_status.resources[0].metadata.labels['vault-sealed'] | bool }}"
+
+- name: Init vault0
+  community.kubernetes.k8s_exec:
+    namespace: "{{ namespace }}"
+    pod: vault-0
+    command: "vault operator init -format=json -key-shares={{ key_shares }} -key-threshold={{ key_threshold }}"
+  register: vault_0_init
+  when: not vault_intialized
+
+- name: Set Facts
+  set_fact:
+    vault_root_token:   "{{ vault_0_init.stdout|from_json|json_query('root_token') }}"
+    vault_unseal_keys:  "{{ vault_0_init.stdout|from_json|json_query('unseal_keys_b64') }}"
+  when: vault_0_init.stdout is defined
+
+- name: deploy root token secret
+  community.kubernetes.k8s:
+    state: present
+    namespace: "{{ namespace }}"
+    definition: "{{ lookup('template', 'secret-root-token.yml.j2') }}"
+    wait: yes
+  when: vault_root_token is defined
+
+- name: deploy unseal keys secret
+  community.kubernetes.k8s:
+    state: present
+    namespace: "{{ namespace }}"
+    definition: "{{ lookup('template', 'secret-unseal-keys.yml.j2') }}"
+    wait: yes
+  when: vault_unseal_keys is defined
+
+- name: Unseal vault0
+  community.kubernetes.k8s_exec:
+    namespace: "{{ namespace }}"
+    pod: vault-0
+    command: "vault operator unseal -format=json {{ item }}"  
+  register: vault_0_unseal
+  loop: "{{ vault_unseal_keys }}"
+  when: vault_0_unseal.stdout is undefined or
+        vault_0_unseal.stdout|from_json|json_query('sealed')|bool
+
+- name: Wait for pod to be active
+  community.kubernetes.k8s_info:
+    kind: Pod
+    namespace: "{{ namespace }}"
+    label_selectors:
+      - app.kubernetes.io/name=vault
+      - vault-initialized=true
+      - vault-sealed=false
+      - vault-active=true
+  register: vault_pod_status
+  until: vault_pod_status.resources|length > 0
+
+- name: Get uninitialized pods
+  community.kubernetes.k8s_info:
+    kind: Pod
+    namespace: "{{ namespace }}"
+    label_selectors:
+      - app.kubernetes.io/name=vault
+      - vault-initialized=false
+  register: vault_uninit_pods
+
+- name: Raft join vaults
+  community.kubernetes.k8s_exec:
+    namespace: "{{ namespace }}"
+    pod: "{{ item.metadata.name }}"
+    command: "vault operator raft join -format=json http://vault-0.vault-internal:8200"  
+  loop: "{{ vault_uninit_pods.resources }}"
+  loop_control:
+    label: "{{ item.metadata.name }}"
+
+- name: Get sealed pods
+  community.kubernetes.k8s_info:
+    kind: Pod
+    namespace: "{{ namespace }}"
+    label_selectors:
+      - app.kubernetes.io/name=vault
+      - vault-sealed=true
+  register: vault_sealed_pods
+
+- name: Unseal pods
+  community.kubernetes.k8s_exec:
+    namespace: "{{ namespace }}"
+    pod: "{{ item.0.metadata.name}}"
+    command: "vault operator unseal -format=json {{ item.1 }}"  
+  loop: "{{ vault_sealed_pods.resources|product(vault_unseal_keys)|list }}"
+  loop_control:
+    label: "{{ item.0.metadata.name }}/{{ item.1 }}"
+
+- name: Wait for all pods to be ready
+  community.kubernetes.k8s_info:
+    kind: Pod
+    namespace: "{{ namespace }}"
+    label_selectors:
+      - app.kubernetes.io/name=vault
+      - vault-initialized=true
+      - vault-sealed=false
+  register: vault_pod_status
+  until: vault_pod_status.resources|length >= replicas

@@ -1,0 +1,9 @@
+---
+- name: Get sealed pods
+  community.kubernetes.k8s_info:
+    kind: Pod
+    namespace: vault
+    label_selectors:
+      - app.kubernetes.io/name=vault
+      - vault-sealed=true
+  register: vault_sealed_pods
