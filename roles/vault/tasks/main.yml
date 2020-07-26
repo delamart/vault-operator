@@ -1,0 +1,8 @@
+---
+# tasks file for vault
+- name: create namespace
+  community.kubernetes.k8s:
+    api_version: v1
+    kind: Namespace
+    name: vault
+    state: present
