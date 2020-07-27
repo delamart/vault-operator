@@ -17,7 +17,7 @@ spec:
       containers:
         - name: vault-operator
           # Replace this with the built image name
-          image: "REPLACE_IMAGE"
+          image: "delamart/vault-operator:latest"
           imagePullPolicy: "Always"
           volumeMounts:
           - mountPath: /tmp/ansible-operator/runner
