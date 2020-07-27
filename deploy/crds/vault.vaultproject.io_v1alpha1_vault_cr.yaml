@@ -1,7 +1,8 @@
 apiVersion: vault.vaultproject.io/v1alpha1
 kind: Vault
 metadata:
-  name: example-vault
+  name: my-vault
 spec:
-  # Add fields here
-  size: 3
+  replicas: 3
+  key_shares: 1
+  key_threshold: 1

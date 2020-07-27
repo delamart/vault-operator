@@ -2,8 +2,44 @@
 - name: Get sealed pods
   community.kubernetes.k8s_info:
     kind: Pod
-    namespace: vault
+    namespace: "{{ namespace }}"
     label_selectors:
       - app.kubernetes.io/name=vault
       - vault-sealed=true
   register: vault_sealed_pods
+
+- name: Get unseal keys
+  community.kubernetes.k8s_info:
+    kind: Secret
+    namespace: "{{ namespace }}"
+    name: vault-unseal-keys
+  register: vault_unseal_keys_secret
+
+- name: Set unseal keys
+  set_fact:
+    vault_unseal_keys: "{{ vault_unseal_keys_secret.resources[0].data.unseal_keys|b64decode|from_json }}"
+  when: vault_unseal_keys_secret.resources|length > 0
+
+- name: Unseal pods
+  community.kubernetes.k8s_exec:
+    namespace: "{{ namespace }}"
+    pod: "{{ item.0.metadata.name}}"
+    command: "vault operator unseal -format=json {{ item.1 }}"  
+  loop: "{{ vault_sealed_pods.resources|product(vault_unseal_keys)|list }}"
+  loop_control:
+    label: "{{ item.0.metadata.name }}/{{ item.1 }}"
+  when:
+    - vault_sealed_pods.resources|length > 0
+    - vault_unseal_keys is defined
+
+- name: Wait for all pods to be ready
+  community.kubernetes.k8s_info:
+    kind: Pod
+    namespace: "{{ namespace }}"
+    label_selectors:
+      - app.kubernetes.io/name=vault
+      - vault-sealed=false
+  register: vault_pod_status
+  until: vault_pod_status.resources|length >= replicas
+  retries: 5
+  delay: 5
