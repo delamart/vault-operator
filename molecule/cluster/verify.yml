@@ -8,10 +8,10 @@
     - community.kubernetes
 
   vars:
-    custom_resource: "{{ lookup('template', '/'.join([deploy_dir, 'crds/vault.vaultproject.io_v1alpha1_vault_cr.yaml'])) | from_yaml }}"
+    custom_resource: "{{ lookup('template', '/'.join([deploy_dir, 'crds/ierik.com_v1alpha1_vault_cr.yaml'])) | from_yaml }}"
 
   tasks:
-    - name: Create the vault.vaultproject.io/v1alpha1.Vault and wait for reconciliation to complete
+    - name: Create the ierik.com/v1alpha1.Vault and wait for reconciliation to complete
       k8s:
         state: present
         namespace: '{{ namespace }}'

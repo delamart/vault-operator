@@ -67,7 +67,7 @@ rules:
   verbs:
   - get
 - apiGroups:
-  - vault.vaultproject.io
+  - ierik.com
   resources:
   - '*'
   verbs:
