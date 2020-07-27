@@ -51,21 +51,3 @@
   until: vault_pod_status.resources|length > 0
   retries: 5
   delay: 5
-
-- name: Get uninitialized pods
-  community.kubernetes.k8s_info:
-    kind: Pod
-    namespace: "{{ namespace }}"
-    label_selectors:
-      - app.kubernetes.io/name=vault
-      - vault-initialized=false
-  register: vault_uninit_pods
-
-- name: Raft join vaults
-  community.kubernetes.k8s_exec:
-    namespace: "{{ namespace }}"
-    pod: "{{ item.metadata.name }}"
-    command: "vault operator raft join -format=json http://vault-0.vault-internal:8200"  
-  loop: "{{ vault_uninit_pods.resources }}"
-  loop_control:
-    label: "{{ item.metadata.name }}"

@@ -8,6 +8,15 @@
       - vault-sealed=true
   register: vault_sealed_pods
 
+- name: Raft join vaults
+  community.kubernetes.k8s_exec:
+    namespace: "{{ namespace }}"
+    pod: "{{ item.metadata.name }}"
+    command: "vault operator raft join -format=json http://vault-0.vault-internal:8200"  
+  loop: "{{ vault_sealed_pods.resources }}"
+  loop_control:
+    label: "{{ item.metadata.name }}"
+
 - name: Get unseal keys
   community.kubernetes.k8s_info:
     kind: Secret
