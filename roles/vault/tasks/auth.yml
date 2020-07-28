@@ -22,12 +22,11 @@
   changed_when: false
 
 - name: Enable K8S auth
-  community.kubernetes.k8s_exec:
-    namespace: "{{ namespace }}"
-    pod: vault-0
-    command: "vault auth enable kubernetes"
+  hashivault_auth_method:
+    token: "{{ vault_root_token }}"
+    url: "{{ lookup('env','VAULT_ADDR')|default('http://vault-active.vault:8200',true) }}"
+    method_type: kubernetes
   register: enable_k8s_auth
-  changed_when: "'path is already in use at kubernetes' not in enable_k8s_auth.stderr"
 
 - name: Get service account
   community.kubernetes.k8s_info:
@@ -61,6 +60,22 @@
     pod: vault-0
     command: "vault write auth/kubernetes/config token_reviewer_jwt={{ vault_sa_token }} kubernetes_host=https://{{ k8s_api_address.stdout|trim }}:443 kubernetes_ca_cert=@/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
   changed_when: enable_k8s_auth.changed
+
+- name: Set vault-operator policy
+  hashivault_policy:
+    token: "{{ vault_root_token }}"
+    url: "{{ lookup('env','VAULT_ADDR')|default('http://vault-active.vault:8200',true) }}"
+    name: vault-operator
+    rules: "{{ lookup('file','vault-operator.hcl') }}"
+
+- name: Set vault-operator role
+  hashivault_k8s_auth_role:
+    token: "{{ vault_root_token }}"
+    url: "{{ lookup('env','VAULT_ADDR')|default('http://vault-active.vault:8200',true) }}"
+    name: vault-operator
+    policies: ["vault-operator"]
+    bound_service_account_names: ["vault-operator"]
+    bound_service_account_namespaces: ["{{ lookup('env','VAULT_K8S_NAMESPACE')|default(namespace,true) }}"]
 
 - name: Logout
   community.kubernetes.k8s_exec:
