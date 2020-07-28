@@ -67,7 +67,7 @@ rules:
   verbs:
   - get
 - apiGroups:
-  - ierik.com
+  - vault.ierik.com
   resources:
   - '*'
   verbs:

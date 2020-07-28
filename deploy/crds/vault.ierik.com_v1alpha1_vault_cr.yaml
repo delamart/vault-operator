@@ -1,4 +1,4 @@
-apiVersion: ierik.com/v1alpha1
+apiVersion: vault.ierik.com/v1alpha1
 kind: Vault
 metadata:
   name: my-vault
