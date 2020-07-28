@@ -36,3 +36,5 @@
   when: not vault_intialized
 
 - include_tasks: unseal.yml
+
+- include_tasks: auth.yml

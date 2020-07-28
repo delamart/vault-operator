@@ -23,11 +23,14 @@
     namespace: "{{ namespace }}"
     name: vault-unseal-keys
   register: vault_unseal_keys_secret
+  when: vault_unseal_keys is undefined
 
 - name: Set unseal keys
   set_fact:
     vault_unseal_keys: "{{ vault_unseal_keys_secret.resources[0].data.unseal_keys|b64decode|from_json }}"
-  when: vault_unseal_keys_secret.resources|length > 0
+  when:
+    - vault_unseal_keys_secret.resources is defined 
+    - vault_unseal_keys_secret.resources|length > 0
 
 - name: Unseal pods
   community.kubernetes.k8s_exec:
