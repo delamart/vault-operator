@@ -4,6 +4,7 @@ metadata:
   name: vault-operator
 subjects:
 - kind: ServiceAccount
+  namespace: vault-operator
   name: vault-operator
 roleRef:
   kind: ClusterRole
