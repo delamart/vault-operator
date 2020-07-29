@@ -75,7 +75,7 @@
     name: vault-operator
     policies: ["vault-operator"]
     bound_service_account_names: ["vault-operator"]
-    bound_service_account_namespaces: ["{{ lookup('env','VAULT_K8S_NAMESPACE')|default(namespace,true) }}"]
+    bound_service_account_namespaces: ["{{ lookup('env','WATCH_NAMESPACE')|default('vault-operator',true) }}"]
 
 - name: Logout
   community.kubernetes.k8s_exec:
