@@ -24,7 +24,7 @@
 - name: Enable K8S auth
   hashivault_auth_method:
     token: "{{ vault_root_token }}"
-    url: "{{ lookup('env','VAULT_ADDR')|default('http://vault-active.vault:8200',true) }}"
+    url: "{{ lookup('env','VAULT_ADDR')|default(vault_url,true) }}"
     method_type: kubernetes
   register: enable_k8s_auth
 
@@ -64,18 +64,18 @@
 - name: Set vault-operator policy
   hashivault_policy:
     token: "{{ vault_root_token }}"
-    url: "{{ lookup('env','VAULT_ADDR')|default('http://vault-active.vault:8200',true) }}"
+    url: "{{ lookup('env','VAULT_ADDR')|default(vault_url,true) }}"
     name: vault-operator
     rules: "{{ lookup('file','vault-operator.hcl') }}"
 
 - name: Set vault-operator role
   hashivault_k8s_auth_role:
     token: "{{ vault_root_token }}"
-    url: "{{ lookup('env','VAULT_ADDR')|default('http://vault-active.vault:8200',true) }}"
+    url: "{{ lookup('env','VAULT_ADDR')|default(vault_url,true) }}"
     name: vault-operator
     policies: ["vault-operator"]
     bound_service_account_names: ["vault-operator"]
-    bound_service_account_namespaces: ["{{ lookup('env','WATCH_NAMESPACE')|default('vault-operator',true) }}"]
+    bound_service_account_namespaces: ["{{ lookup('env','OPERATOR_NAMESPACE')|default('vault-operator',true) }}"]
 
 - name: Logout
   community.kubernetes.k8s_exec:
