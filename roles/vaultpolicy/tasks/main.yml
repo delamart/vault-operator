@@ -1,0 +1,24 @@
+---
+# tasks file for vaultpolicy
+- name: Login
+  hashivault_write:
+    url: "{{ vault_url }}"
+    secret: "{{ vault_k8s_mount }}"
+    data:
+      jwt:  "{{ lookup('file','/var/run/secrets/kubernetes.io/serviceaccount/token',errors='ignore')|default(lookup('env','JWT'),true) }}"
+      role: "{{ vault_k8s_role }}"
+  register: login_k8s
+  changed_when: false
+  when: vault_token is undefined or vault_token == ''
+
+- set_fact:
+    vault_token: "{{ login_k8s.data.auth.client_token }}"
+  when: login_k8s.data is defined
+
+- name: Set policy
+  hashivault_policy:
+    token: "{{ vault_token }}"
+    url: "{{ vault_url }}"
+    name: "{{ policy }}"
+    rules: "{{ rules }}"
+    state: "{{ state }}"

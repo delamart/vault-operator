@@ -1,0 +1,11 @@
+apiVersion: vault.ierik.com/v1alpha1
+kind: VaultPolicy
+metadata:
+  name: test-policy
+spec:
+  policy: test-policy
+  rules: |
+    # This is a comment
+    path "*" {
+      capabilities = ["read"]
+    }

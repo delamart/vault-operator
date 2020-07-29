@@ -3,3 +3,13 @@
   group: vault.ierik.com
   kind: Vault
   role: vault
+  watchDependentResources: true
+
+- version: v1alpha1
+  group: vault.ierik.com
+  kind: VaultPolicy
+  role: vaultpolicy
+  finalizer:
+    name: finalizer.vault.ierik.com
+    vars:
+      state: absent

@@ -1,0 +1,15 @@
+---
+# defaults file for vaultpolicy
+vault_url: "{{ lookup('env','VAULT_ADDR')|default('http://vault-active.vault:8200',true) }}"
+vault_token: ''
+vault_k8s_mount: "/auth/kubernetes/login"
+vault_k8s_role: vault-operator
+
+state: present
+
+policy: test-policy
+rules: |
+  # This is a comment
+  path "*" {
+    capabilities = ["read"]
+  }
