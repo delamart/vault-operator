@@ -1,0 +1,11 @@
+domain: ierik.com
+layout: ansible.sdk.operatorframework.io/v1
+projectName: vault-operator
+resources:
+- group: vault
+  kind: Vault
+  version: v1
+- group: vault
+  kind: VaultPolicy
+  version: v1
+version: 3-alpha

@@ -7,7 +7,7 @@ vault_k8s_role: vault-operator
 
 state: present
 
-policy: test-policy
+policy: policy-sample
 rules: |
   # This is a comment
   path "*" {

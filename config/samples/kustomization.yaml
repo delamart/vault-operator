@@ -1,0 +1,5 @@
+## Append samples you want in your CSV to this file as resources ##
+resources:
+- vault_v1_vault.yaml
+- vault_v1_vaultpolicy.yaml
+# +kubebuilder:scaffold:manifestskustomizesamples

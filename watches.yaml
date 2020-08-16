@@ -1,11 +1,11 @@
 ---
-- version: v1alpha1
+- version: v1
   group: vault.ierik.com
   kind: Vault
   role: vault
   watchDependentResources: true
 
-- version: v1alpha1
+- version: v1
   group: vault.ierik.com
   kind: VaultPolicy
   role: vaultpolicy

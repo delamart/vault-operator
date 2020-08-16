@@ -1,8 +1,0 @@
-apiVersion: vault.ierik.com/v1alpha1
-kind: Vault
-metadata:
-  name: my-vault
-spec:
-  replicas: 3
-  key_shares: 1
-  key_threshold: 1
