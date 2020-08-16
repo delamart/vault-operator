@@ -28,37 +28,15 @@
     method_type: kubernetes
   register: enable_k8s_auth
 
-- name: Get service account
-  community.kubernetes.k8s_info:
-    kind: ServiceAccount
-    namespace: "{{ namespace }}"
-    name: vault
-  register: vault_service_account
-
-- name: Get service account token
-  community.kubernetes.k8s_info:
-    kind: Secret
-    namespace: "{{ namespace }}"
-    name: "{{ vault_service_account.resources[0].secrets[0].name }}"
-  register: vault_service_account_secret
-
-- name: Set service account token
-  set_fact:
-    vault_sa_token: "{{ vault_service_account_secret.resources[0].data.token|b64decode }}"
-
-- name: Get K8S API address
-  community.kubernetes.k8s_exec:
-    namespace: "{{ namespace }}"
-    pod: vault-0
-    command: "printenv KUBERNETES_PORT_443_TCP_ADDR"
-  register: k8s_api_address
-  changed_when: false
-
 - name: Config K8S auth
   community.kubernetes.k8s_exec:
     namespace: "{{ namespace }}"
     pod: vault-0
-    command: "vault write auth/kubernetes/config token_reviewer_jwt={{ vault_sa_token }} kubernetes_host=https://{{ k8s_api_address.stdout|trim }}:443 kubernetes_ca_cert=@/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+    command: |
+      /bin/sh -c 'vault write auth/kubernetes/config \
+      token_reviewer_jwt=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token) \
+      kubernetes_host=https://${KUBERNETES_PORT_443_TCP_ADDR}:443 \
+      kubernetes_ca_cert=@/var/run/secrets/kubernetes.io/serviceaccount/ca.crt'
   changed_when: enable_k8s_auth.changed
 
 - name: Set vault-operator policy
